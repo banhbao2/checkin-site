@@ -422,6 +422,44 @@ button { font: inherit; color: inherit; }
   background: var(--online);
   border: 2px solid var(--bg);
 }
+.names-empty { margin-top: var(--space-xl); }
+.name-item { position: relative; }
+.name-item .name-btn { width: 100%; padding-right: 48px; }
+.name-remove {
+  position: absolute;
+  top: 50%;
+  right: var(--space-sm);
+  translate: 0 -50%;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-2);
+  font-size: 22px;
+  cursor: pointer;
+}
+.name-remove:hover { background: var(--overlay); color: var(--text); }
+
+.add-name {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  max-width: 560px;
+}
+.input {
+  flex: 1 1 200px;
+  min-height: 48px;
+  padding: 0 var(--space-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--glass);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+.input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* ── Reaction picker ────────────────────────── */
 .picker { padding: var(--space-lg); }
@@ -711,4 +749,13 @@ button { font: inherit; color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Fluent 3D emoji images (see emo() in app.js), sized like the emoji text they replace. */
+.emoji {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  user-select: none;
 }

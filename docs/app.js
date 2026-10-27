@@ -1,8 +1,19 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/+esm";
-import { SUPABASE_URL, SUPABASE_KEY, TEAM_NAMES } from "./config.js";
+import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 
-const TEAM = [...new Set(TEAM_NAMES.map((n) => String(n).trim()).filter(Boolean))];
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Each check-in is a room at ?room=<code>. The code is the only key, so it's long and random.
+const CODE_CHARS = "abcdefghjkmnpqrstuvwxyz23456789"; // no 0/o, 1/l/i look-alikes
+function newCode() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => CODE_CHARS[b % CODE_CHARS.length]).join("");
+}
+let ROOM = new URLSearchParams(location.search).get("room")?.toLowerCase();
+if (!/^[a-z0-9]{10}$/.test(ROOM ?? "")) {
+  ROOM = newCode();
+  history.replaceState(null, "", `?room=${ROOM}`);
+}
+
+// The database only shows this room's rows to requests carrying its code (see supabase.sql).
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, { global: { headers: { "x-room": ROOM } } });
 
 // Reactions, grouped from best to roughest. `score` drives the team vibe headline.
 const GROUPS = [
@@ -33,7 +44,7 @@ const GROUPS = [
       { id: "coffee", emoji: "☕", label: "Need coffee" },
       { id: "cloudy", emoji: "🌥️", label: "Cloudy" },
       { id: "turtle", emoji: "🐢", label: "Slow start" },
-      { id: "melting", emoji: "🫠", label: "Melting" },
+      { id: "melting", emoji: "🥵", label: "Melting" },
     ],
   },
   {
@@ -62,14 +73,14 @@ const REACTION = Object.fromEntries(GROUPS.flatMap((g) =>
   g.reactions.map((r) => [r.id, { ...r, score: g.score }])));
 
 // Quick cheers during the why-round. Sent live to everyone, not stored.
-const CHEERS = ["👏", "❤️", "😂", "💯", "🙌", "🫶"];
+const CHEERS = ["👏", "❤️", "😂", "💯", "🙌", "🤗"];
 const CHEER_INTERVAL_MS = 250;
 
 const VIBES = [
   { min: 3.5, emoji: "🚀", text: "The team is flying high" },
   { min: 2.75, emoji: "😊", text: "The team is feeling good" },
   { min: 2, emoji: "🌤️", text: "A mixed bag today" },
-  { min: 0, emoji: "🫂", text: "A tough day. Be kind." },
+  { min: 0, emoji: "🤗", text: "A tough day. Be kind." },
 ];
 
 const ICONS = {
@@ -98,6 +109,12 @@ function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[c]);
+}
+
+// Emoji are drawn as Microsoft Fluent 3D images (docs/emoji/<code point>.png), so they look the same on every system.
+function emo(emoji) {
+  const file = [...emoji].filter((c) => c !== "️").map((c) => c.codePointAt(0).toString(16)).join("-");
+  return `<img class="emoji" src="emoji/${file}.png" alt="" draggable="false">`;
 }
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -144,7 +161,7 @@ function burst(el, emoji, count = 7) {
   for (let i = 0; i < count; i++) {
     const p = document.createElement("span");
     p.className = "fx-emoji";
-    p.textContent = emoji;
+    p.innerHTML = emo(emoji);
     p.style.left = `${rect.left + rect.width / 2}px`;
     p.style.top = `${rect.top + rect.height / 2}px`;
     p.style.setProperty("--dx", `${(Math.random() - 0.5) * 160}px`);
@@ -185,7 +202,7 @@ function announce(prev, next) {
   if (!prev) return;
   for (const name of next.online) {
     if (!prev.online.includes(name) && name !== S.me) {
-      feed(`<span class="feed-emoji">👋</span><span><strong>${esc(name)}</strong> joined</span>`);
+      feed(`<span class="feed-emoji">${emo("👋")}</span><span><strong>${esc(name)}</strong> joined</span>`);
       pulse(tileFor(name), "is-joined");
     }
   }
@@ -197,7 +214,7 @@ function announce(prev, next) {
     pulse(tileFor(name), "is-popped");
     if (name === S.me) continue; // own picks already burst from the picker
     burst(tileFor(name)?.querySelector(".tile-emoji"), r?.emoji ?? "✨");
-    feed(`<span class="feed-emoji">${r?.emoji ?? "✨"}</span><span><strong>${esc(name)}</strong> is ${esc((r?.label ?? "here").toLowerCase())}</span>`);
+    feed(`<span class="feed-emoji">${emo(r?.emoji ?? "✨")}</span><span><strong>${esc(name)}</strong> is ${esc((r?.label ?? "here").toLowerCase())}</span>`);
   }
 }
 
@@ -243,7 +260,7 @@ function spinWheel(order) {
 function publish() {
   if (!S.data) return;
   const prev = S.state;
-  const next = { team: TEAM, online: TEAM.filter((n) => S.here.includes(n)), ...S.data };
+  const next = { online: S.data.team.filter((n) => S.here.includes(n)), ...S.data };
   S.state = next;
   if (prev && prev.speaker < 0 && next.speaker === 0 && next.shuffled) spinWheel(next.order);
   else render();
@@ -253,22 +270,28 @@ function publish() {
 // Both tables are tiny, so every change just re-reads them.
 async function load() {
   const seq = ++S.loads;
-  const [reactions, round] = await Promise.all([
-    db.from("reactions").select("name, reaction"),
-    db.from("round").select("order:speakers, speaker, shuffled").single(),
+  const [members, round] = await Promise.all([
+    db.from("members").select("name, reaction").eq("room", ROOM).order("added_at"),
+    db.from("rooms").select("order:speakers, speaker, shuffled").eq("code", ROOM).single(),
   ]);
   if (seq !== S.loads) return; // a newer read is on its way
-  if (reactions.error || round.error) return console.error(reactions.error ?? round.error);
-  S.data = { reactions: Object.fromEntries(reactions.data.map((r) => [r.name, r.reaction])), ...round.data };
+  if (members.error || round.error) return console.error(members.error ?? round.error);
+  S.data = {
+    team: members.data.map((m) => m.name),
+    reactions: Object.fromEntries(members.data.filter((m) => m.reaction).map((m) => [m.name, m.reaction])),
+    ...round.data,
+  };
   publish();
 }
 
-const channel = db.channel("team", { config: { broadcast: { self: true } } });
+const channel = db.channel(`room:${ROOM}`, { config: { broadcast: { self: true } } });
 
-function connect() {
+async function connect() {
+  // Opening a link creates its room, or marks it as used so the cleanup job keeps it.
+  await write(db.from("rooms").upsert({ code: ROOM, last_used: new Date().toISOString() }), { notify: false });
   channel
-    .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, load)
-    .on("postgres_changes", { event: "*", schema: "public", table: "round" }, load)
+    // The database can't push changes past the room rules, so pages ping each other after writing.
+    .on("broadcast", { event: "changed" }, load)
     .on("presence", { event: "sync" }, () => {
       S.here = Object.values(channel.presenceState()).flat().map((p) => p.name);
       publish();
@@ -288,27 +311,34 @@ function connect() {
     });
 }
 
-// Writes go to the database; every open page (this one too) re-reads on the change event.
-async function write(query) {
+// Writes go to the database, then tell every open page (this one too) to re-read.
+async function write(query, { notify = true } = {}) {
   const { error } = await query;
-  if (error) console.error(error);
+  if (error) return console.error(error);
+  if (notify) channel.send({ type: "broadcast", event: "changed", payload: {} });
 }
 
 function setReaction(reaction) {
-  return write(reaction
-    ? db.from("reactions").upsert({ name: S.me, reaction })
-    : db.from("reactions").delete().eq("name", S.me));
+  return write(db.from("members").update({ reaction }).eq("room", ROOM).eq("name", S.me));
+}
+
+function addName(name) {
+  return write(db.from("members").upsert({ room: ROOM, name }, { ignoreDuplicates: true }));
+}
+
+function removeName(name) {
+  return write(db.from("members").delete().eq("room", ROOM).eq("name", name));
 }
 
 // With `fromSpeaker`, only applies if nobody moved the round on meanwhile (double clicks).
 function setRound(fields, fromSpeaker) {
-  let query = db.from("round").update(fields).eq("id", 1);
+  let query = db.from("rooms").update(fields).eq("code", ROOM);
   if (fromSpeaker !== undefined) query = query.eq("speaker", fromSpeaker);
   return write(query);
 }
 
 function startRound(shuffled) {
-  const order = TEAM.filter((name) => S.state.reactions[name]);
+  const order = S.state.team.filter((name) => S.state.reactions[name]);
   if (!order.length) return;
   if (shuffled) shuffle(order);
   return setRound({ speakers: order, speaker: 0, shuffled });
@@ -325,7 +355,7 @@ function moveSpeaker(delta) {
 }
 
 async function reset() {
-  await write(db.from("reactions").delete().neq("name", ""));
+  await write(db.from("members").update({ reaction: null }).eq("room", ROOM));
   await endRound();
 }
 
@@ -390,17 +420,10 @@ function render() {
     return;
   }
 
-  if (!st.team.length) {
-    patch("main", `
-      <section class="hero">
-        <h1 class="headline">No team yet.</h1>
-        <p class="lead">The team list hasn't been set up yet. Ask the person who runs this check-in to add the names.</p>
-      </section>`);
-    return;
-  }
-
   if (!isMember && S.me !== WATCHING) {
-    patch("main", whoHtml(st));
+    // The shell stays the same, so a name being typed isn't wiped when the list changes live.
+    patch("main", whoHtml());
+    patch("names", namesHtml(st));
     return;
   }
 
@@ -419,28 +442,40 @@ function render() {
   patch("controls", controlsHtml(st));
 }
 
-function whoHtml(st) {
-  const names = st.team.map((name) => {
-    const r = REACTION[st.reactions[name]];
-    const here = st.online.includes(name);
-    const status = r ? r.label : here ? "Already here" : "";
-    return `
-      <button class="name-btn" data-action="pick-name" data-name="${esc(name)}">
-        <span class="name-avatar ${here ? "is-online" : ""}">${r ? r.emoji : esc(initials(name))}</span>
-        <span class="name-text">
-          <span>${esc(name)}</span>
-          ${status ? `<span class="name-status">${esc(status)}</span>` : ""}
-        </span>
-      </button>`;
-  }).join("");
+function whoHtml() {
   return `
     <section class="hero">
       <p class="eyebrow">${esc(today())}</p>
       <h1 class="headline">Who are you?</h1>
-      <p class="lead">Pick your name to join the check-in.</p>
-      <div class="names">${names}</div>
+      <p class="lead">Pick your name to join, or add everyone who's joining. Share the link and they can too.</p>
+      <div id="names"></div>
+      <form class="add-name" data-form="add-name">
+        <input class="input" name="name" maxlength="60" required autocomplete="off" placeholder="Add a name" aria-label="Name to add">
+        <button class="btn btn-secondary">Add</button>
+        <button class="btn btn-primary" type="button" data-action="share">Copy link</button>
+      </form>
       <button class="btn btn-ghost" data-action="watch" style="margin-top: var(--space-lg); padding-left: 0">Just watching (for screen sharing)</button>
     </section>`;
+}
+
+function namesHtml(st) {
+  if (!st.team.length) return `<p class="muted names-empty">No names yet. Add the first one below.</p>`;
+  return `<div class="names">${st.team.map((name) => {
+    const r = REACTION[st.reactions[name]];
+    const here = st.online.includes(name);
+    const status = r ? r.label : here ? "Already here" : "";
+    return `
+      <div class="name-item">
+        <button class="name-btn" data-action="pick-name" data-name="${esc(name)}">
+          <span class="name-avatar ${here ? "is-online" : ""}">${r ? emo(r.emoji) : esc(initials(name))}</span>
+          <span class="name-text">
+            <span>${esc(name)}</span>
+            ${status ? `<span class="name-status">${esc(status)}</span>` : ""}
+          </span>
+        </button>
+        <button class="name-remove" data-action="remove-name" data-name="${esc(name)}" aria-label="Remove ${esc(name)}" title="Remove ${esc(name)}">×</button>
+      </div>`;
+  }).join("")}</div>`;
 }
 
 function heroHtml(st) {
@@ -453,10 +488,10 @@ function heroHtml(st) {
     <section class="hero hero-compact">
       <p class="eyebrow">${esc(today())} · Check-in</p>
       <h1 class="headline">${vibe
-        ? `${esc(vibe.text)} <span class="vibe-emoji" aria-hidden="true">${vibe.emoji}</span>`
+        ? `${esc(vibe.text)} <span class="vibe-emoji" aria-hidden="true">${emo(vibe.emoji)}</span>`
         : "How is everyone today?"}</h1>
       <div class="meter" aria-label="${picked.length} of ${total} checked in">
-        <div class="meter-track"><div class="meter-fill" style="width: ${Math.round((picked.length / total) * 100)}%"></div></div>
+        <div class="meter-track"><div class="meter-fill" style="width: ${total ? Math.round((picked.length / total) * 100) : 0}%"></div></div>
         <span class="meter-label"><strong>${picked.length}</strong> of ${total} checked in</span>
       </div>
     </section>`;
@@ -471,7 +506,7 @@ function pickerHtml(st) {
       <div class="reactions" role="radiogroup" aria-label="${g.title}">
         ${g.reactions.map((x) => `
           <button class="reaction" role="radio" aria-checked="${mine === x.id}" data-action="react" data-id="${x.id}" title="${x.label}">
-            <span class="reaction-emoji" aria-hidden="true">${x.emoji}</span>
+            <span class="reaction-emoji" aria-hidden="true">${emo(x.emoji)}</span>
             <span class="reaction-label">${x.label}</span>
           </button>`).join("")}
       </div>
@@ -484,7 +519,7 @@ function pickerHtml(st) {
           <button class="link-btn" data-action="wrong-name" title="Removes your pick and goes back to the name list">Not ${esc(S.me)}?</button>
         </div>
         <p class="picker-current" aria-live="polite">${r
-          ? `<span class="picker-current-emoji">${r.emoji}</span> ${esc(r.label)}`
+          ? `<span class="picker-current-emoji">${emo(r.emoji)}</span> ${esc(r.label)}`
           : "Tap one. Everyone sees it live."}</p>
       </div>
       ${groups}
@@ -507,7 +542,7 @@ function boardHtml(st) {
     return `
       <li class="tile ${cls}" data-name="${esc(name)}">
         <span class="tile-presence" title="${here ? "Online" : "Away"}"></span>
-        <span class="tile-emoji" aria-hidden="true">${r ? r.emoji : `<span class="tile-waiting"><i></i><i></i><i></i></span>`}</span>
+        <span class="tile-emoji" aria-hidden="true">${r ? emo(r.emoji) : `<span class="tile-waiting"><i></i><i></i><i></i></span>`}</span>
         <span class="tile-name">${esc(name)}${name === S.me ? " · you" : ""}</span>
         <span class="tile-label">${r ? esc(r.label) : here ? "Choosing…" : "Not here yet"}</span>
       </li>`;
@@ -536,7 +571,7 @@ function spotlightHtml(st) {
     return `
       <section class="glass spotlight">
         <p class="eyebrow">Why-round · done</p>
-        <div class="spotlight-emoji" aria-hidden="true">🎉</div>
+        <div class="spotlight-emoji" aria-hidden="true">${emo("🎉")}</div>
         <h1 class="spotlight-name">Thanks, team.</h1>
         <div class="btn-row">
           <button class="btn btn-secondary" data-action="prev">Back</button>
@@ -549,9 +584,9 @@ function spotlightHtml(st) {
     return `
       <section class="glass spotlight is-spinning">
         <p class="eyebrow">Random order · who goes first?</p>
-        <div class="spotlight-emoji" aria-hidden="true">${r?.emoji ?? "❔"}</div>
+        <div class="spotlight-emoji" aria-hidden="true">${emo(r?.emoji ?? "❔")}</div>
         <h1 class="spotlight-name">${esc(S.spin)}</h1>
-        <p class="spotlight-question">🎰 Spinning…</p>
+        <p class="spotlight-question">${emo("🎰")} Spinning…</p>
       </section>`;
   }
   const name = st.order[st.speaker];
@@ -560,11 +595,11 @@ function spotlightHtml(st) {
   return `
     <section class="glass spotlight" aria-live="polite">
       <p class="eyebrow">Why-round · ${st.speaker + 1} of ${total}</p>
-      <div class="spotlight-emoji" aria-hidden="true" data-k="${esc(name)}">${r?.emoji ?? "❔"}</div>
+      <div class="spotlight-emoji" aria-hidden="true" data-k="${esc(name)}">${emo(r?.emoji ?? "❔")}</div>
       <h1 class="spotlight-name">${isMe ? "Your turn" : esc(name)}</h1>
       <p class="spotlight-question">Why ${isMe ? "did you" : `did ${esc(name)}`} pick “${esc(r?.label ?? "this")}”?</p>
       <div class="cheers" role="group" aria-label="Send a cheer">
-        ${CHEERS.map((c) => `<button class="cheer" data-action="cheer" data-emoji="${c}" aria-label="Cheer ${c}">${c}</button>`).join("")}
+        ${CHEERS.map((c) => `<button class="cheer" data-action="cheer" data-emoji="${c}" aria-label="Cheer ${c}">${emo(c)}</button>`).join("")}
       </div>
       <div class="btn-row">
         <button class="btn btn-secondary" data-action="prev" ${st.speaker === 0 ? "disabled" : ""}>Previous</button>
@@ -610,6 +645,23 @@ document.addEventListener("click", async (event) => {
       S.lastCheer = Date.now();
       return channel.send({ type: "broadcast", event: "cheer", payload: { emoji: target.dataset.emoji } });
     }
+    case "share":
+      try {
+        await navigator.clipboard.writeText(location.href);
+        feed(`<span class="feed-emoji">${emo("🔗")}</span><span>Link copied. Anyone with it can join and edit.</span>`);
+      } catch {
+        prompt("Copy this link:", location.href);
+      }
+      return;
+    case "remove-name": {
+      const name = target.dataset.name;
+      if (await confirmDialog({
+        title: `Remove ${name}?`,
+        body: `${name} and their reaction are removed for everyone.`,
+        ok: "Remove",
+      })) removeName(name);
+      return;
+    }
     case "start": return startRound(false);
     case "start-shuffled": return startRound(true);
     case "next": return moveSpeaker(1);
@@ -625,15 +677,26 @@ document.addEventListener("click", async (event) => {
   }
 });
 
+document.addEventListener("submit", (event) => {
+  if (event.target.dataset.form !== "add-name") return;
+  event.preventDefault();
+  const input = event.target.elements.name;
+  const name = input.value.trim().replace(/\s+/g, " ");
+  if (!name) return;
+  input.value = "";
+  addName(name);
+});
+
 // ── Boot ────────────────────────────────────────
 
 document.getElementById("app").innerHTML = `
   <div class="glow" aria-hidden="true"></div>
   <header class="site-header">
     <div class="container">
-      <a class="brand" href="./" data-action="home" title="Back to start">Team Check-in</a>
+      <a class="brand" href="?room=${ROOM}" data-action="home" title="Back to start">Team Check-in</a>
       <div class="header-live" id="live"></div>
       <div class="header-actions">
+        <button class="btn btn-ghost" data-action="share" title="Copy the link to this check-in">Share</button>
         <div id="who"></div>
         <button class="icon-btn" data-action="theme" title="Switch light / dark mode" aria-label="Switch light or dark mode">${ICONS.theme}</button>
       </div>
