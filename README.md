@@ -1,6 +1,6 @@
 # Team Check-in
 
-Live check-in for any team's meeting. Opening the site creates a new check-in room with its own link (`?room=<code>`). Add the names of the people joining, share the link, and everyone picks their name and a reaction. Everything is live: you see people join and their reactions pop up the moment they choose. Then the app walks through a "why" round one person at a time. **Reset** clears the reactions for the next meeting.
+Live check-in for any team's meeting. Click **Create a room** to get a check-in room with its own link (`?room=<code>`). Share the link; anyone in the room can add themselves and others, and everyone picks their name and a reaction. Everything is live: you see people join and their reactions pop up the moment they choose. Then the app walks through a "why" round one person at a time. **Reset** clears the reactions for the next meeting.
 
 A static page on GitHub Pages (the `docs/` folder). Supabase stores the reactions and pushes live updates, who's online and cheers to every open browser. No build step, no server.
 
@@ -27,7 +27,7 @@ Free Supabase projects pause after about a week without use; unpause from the Su
 
 ## How it works
 
-- **Rooms:** the site without `?room=` makes a new room. The room code is the only key: anyone with the link can add and remove names, check in, run the why-round and reset; nobody without it can see or list rooms. Bookmark the link to reuse the same room (and its names) every meeting. Rooms nobody opens for 90 days are deleted automatically (weekly job in `supabase.sql`). Reset clears reactions but keeps the names.
+- **Rooms:** the site without `?room=` shows a start page with **Create a room** (and **Back to your last room** on devices that opened one before). Opening a page never creates a room; a wrong or deleted room link says so. The room code is the only key: anyone with the link can add and remove names, check in, run the why-round and reset; nobody without it can see or list rooms. Bookmark the link to reuse the same room (and its names) every meeting. Rooms nobody opens for 90 days are deleted automatically (weekly job in `supabase.sql`). Reset clears reactions but keeps the names.
 - Everyone starts at the name list when they open the link. The chosen name is kept until the tab is closed, so a refresh keeps your place. To pick a different name: click **Team Check-in** (top left), **Change** next to your name, **Not <name>?** in the picker, or use the browser's back button. Going back keeps your reaction. Only **Not <name>?** also removes the reaction you just picked on this device, for when you chose the wrong name.
 - **Just watching** is for the screen that's shared in the meeting: it shows progress and the board without picking a name.
 - Reactions are visible to everyone immediately. Joins and new reactions appear in a live feed (bottom left) with a small emoji burst on the person's tile.

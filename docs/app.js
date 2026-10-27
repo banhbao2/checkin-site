@@ -6,14 +6,22 @@ const CODE_CHARS = "abcdefghjkmnpqrstuvwxyz23456789"; // no 0/o, 1/l/i look-alik
 function newCode() {
   return Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => CODE_CHARS[b % CODE_CHARS.length]).join("");
 }
-let ROOM = new URLSearchParams(location.search).get("room")?.toLowerCase();
-if (!/^[a-z0-9]{10}$/.test(ROOM ?? "")) {
-  ROOM = newCode();
-  history.replaceState(null, "", `?room=${ROOM}`);
-}
+const roomParam = new URLSearchParams(location.search).get("room")?.toLowerCase() ?? "";
+const ROOM = /^[a-z0-9]{10}$/.test(roomParam) ? roomParam : null; // null = start page
 
-// The database only shows this room's rows to requests carrying its code (see supabase.sql).
-const db = createClient(SUPABASE_URL, SUPABASE_KEY, { global: { headers: { "x-room": ROOM } } });
+// The database only shows a room's rows to requests carrying its code (see supabase.sql).
+function client(code) {
+  return createClient(SUPABASE_URL, SUPABASE_KEY, { global: { headers: { "x-room": code } } });
+}
+const db = ROOM && client(ROOM);
+
+// Rooms are only created by the button, never by opening a page.
+async function createRoom() {
+  const code = newCode();
+  const { error } = await client(code).from("rooms").insert({ code });
+  if (error) return console.error(error);
+  location.assign(`?room=${code}`);
+}
 
 // Reactions, grouped from best to roughest. `score` drives the team vibe headline.
 const GROUPS = [
@@ -226,6 +234,7 @@ const S = {
   data: null, // { reactions, order, speaker, shuffled } as last read from the database
   here: [], // names with the page open, from Realtime presence
   online: false,
+  missing: false, // the ?room= link points to no room
   loads: 0,
   lastCheer: 0,
   pickedHere: new Set(), // names this device has reacted as since loading
@@ -284,11 +293,18 @@ async function load() {
   publish();
 }
 
-const channel = db.channel(`room:${ROOM}`, { config: { broadcast: { self: true } } });
+const channel = db?.channel(`room:${ROOM}`, { config: { broadcast: { self: true } } });
 
 async function connect() {
-  // Opening a link creates its room, or marks it as used so the cleanup job keeps it.
-  await write(db.from("rooms").upsert({ code: ROOM, last_used: new Date().toISOString() }), { notify: false });
+  // Marks the room as used so the cleanup job keeps it. No row back: wrong link or deleted room.
+  const { data, error } = await db.from("rooms")
+    .update({ last_used: new Date().toISOString() }).eq("code", ROOM).select("code");
+  if (error) return console.error(error);
+  if (!data.length) {
+    S.missing = true;
+    return render();
+  }
+  store.set("checkin:room", ROOM);
   channel
     // The database can't push changes past the room rules, so pages ping each other after writing.
     .on("broadcast", { event: "changed" }, load)
@@ -415,6 +431,11 @@ function render() {
       </button>`
     : "");
 
+  if (!ROOM || S.missing) {
+    patch("main", startHtml());
+    return;
+  }
+
   if (!st) {
     patch("main", `<p class="muted connecting">Connecting…</p>`);
     return;
@@ -442,16 +463,33 @@ function render() {
   patch("controls", controlsHtml(st));
 }
 
+function startHtml() {
+  const last = store.get("checkin:room");
+  return `
+    <section class="hero">
+      <p class="eyebrow">${esc(today())}</p>
+      <h1 class="headline">${S.missing ? "This room doesn't exist." : "Start a check-in"}</h1>
+      <p class="lead">${S.missing
+        ? "Check the link, or create a new room. Rooms nobody opens for 90 days are deleted."
+        : "Create a room, share its link and add the people joining. Everyone with the link can do everything."}</p>
+      <div class="btn-row start-actions">
+        <button class="btn btn-primary" data-action="create-room">Create a room</button>
+        ${last && last !== ROOM ? `<a class="btn btn-secondary" href="?room=${esc(last)}">Back to your last room</a>` : ""}
+      </div>
+    </section>`;
+}
+
 function whoHtml() {
   return `
     <section class="hero">
       <p class="eyebrow">${esc(today())}</p>
       <h1 class="headline">Who are you?</h1>
-      <p class="lead">Pick your name to join, or add everyone who's joining. Share the link and they can too.</p>
+      <p class="lead">Pick your name to join. Not on the list? Add yourself and anyone else joining, then share the link.</p>
       <div id="names"></div>
       <form class="add-name" data-form="add-name">
-        <input class="input" name="name" maxlength="60" required autocomplete="off" placeholder="Add a name" aria-label="Name to add">
+        <input class="input" name="name" maxlength="60" required autocomplete="off" placeholder="Name" aria-label="Name to add">
         <button class="btn btn-secondary">Add</button>
+        <button class="btn btn-secondary" value="me" title="Add this name and join as it">Add me</button>
         <button class="btn btn-primary" type="button" data-action="share">Copy link</button>
       </form>
       <button class="btn btn-ghost" data-action="watch" style="margin-top: var(--space-lg); padding-left: 0">Just watching (for screen sharing)</button>
@@ -653,6 +691,11 @@ document.addEventListener("click", async (event) => {
         prompt("Copy this link:", location.href);
       }
       return;
+    case "create-room":
+      target.disabled = true;
+      await createRoom();
+      target.disabled = false; // only reached if creating failed
+      return;
     case "remove-name": {
       const name = target.dataset.name;
       if (await confirmDialog({
@@ -677,14 +720,15 @@ document.addEventListener("click", async (event) => {
   }
 });
 
-document.addEventListener("submit", (event) => {
+document.addEventListener("submit", async (event) => {
   if (event.target.dataset.form !== "add-name") return;
   event.preventDefault();
   const input = event.target.elements.name;
   const name = input.value.trim().replace(/\s+/g, " ");
   if (!name) return;
   input.value = "";
-  addName(name);
+  await addName(name);
+  if (event.submitter?.value === "me") pickName(name);
 });
 
 // ── Boot ────────────────────────────────────────
@@ -693,10 +737,10 @@ document.getElementById("app").innerHTML = `
   <div class="glow" aria-hidden="true"></div>
   <header class="site-header">
     <div class="container">
-      <a class="brand" href="?room=${ROOM}" data-action="home" title="Back to start">Team Check-in</a>
+      <a class="brand" href="${ROOM ? `?room=${ROOM}` : "./"}" data-action="home" title="Back to start">Team Check-in</a>
       <div class="header-live" id="live"></div>
       <div class="header-actions">
-        <button class="btn btn-ghost" data-action="share" title="Copy the link to this check-in">Share</button>
+        ${ROOM ? `<button class="btn btn-ghost" data-action="share" title="Copy the link to this check-in">Share</button>` : ""}
         <div id="who"></div>
         <button class="icon-btn" data-action="theme" title="Switch light / dark mode" aria-label="Switch light or dark mode">${ICONS.theme}</button>
       </div>
@@ -709,4 +753,4 @@ document.getElementById("app").innerHTML = `
   <div class="fx" id="fx" aria-hidden="true"></div>`;
 
 render();
-connect();
+if (ROOM) connect();

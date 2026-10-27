@@ -441,6 +441,8 @@ button { font: inherit; color: inherit; }
 }
 .name-remove:hover { background: var(--overlay); color: var(--text); }
 
+.start-actions { justify-content: flex-start; margin-top: var(--space-xl); }
+.start-actions a.btn { text-decoration: none; }
 .add-name {
   display: flex;
   flex-wrap: wrap;
