@@ -1,0 +1,13 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.*
+
+# Brand style guide and scraped brand hub material (internal)
+styleguide/
+
+# OS / editor
+.DS_Store
+.vscode/
+*.log
