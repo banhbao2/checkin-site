@@ -1,5 +1,7 @@
 # Team Check-in Website: Requirements
 
+> Original planning doc. The app now runs on GitHub Pages + Supabase instead of Cloudflare; see README.md.
+
 _Status: draft v0.1 (2026-10-26). Open questions are listed at the end._
 
 ## 1. Purpose

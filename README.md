@@ -2,37 +2,38 @@
 
 One shared link for the team's meeting check-in. Everyone opens the link, picks their name, and picks a reaction. Everything is live: you see people join and their reactions pop up the moment they choose. Then the app walks through a "why" round one person at a time. **Reset** clears everything for the next meeting.
 
-Runs on Cloudflare: a Worker serves the page, and a single Durable Object stores the reactions and pushes live updates to every open browser.
+A static page on GitHub Pages (the `docs/` folder). Supabase stores the reactions and pushes live updates, who's online and cheers to every open browser. No build step, no server.
 
-## 1. Set your team names
+## 1. Set up Supabase (once)
 
-In [team.json](team.json):
+1. In your Supabase project: **SQL Editor → New query**, paste [supabase.sql](supabase.sql), **Run**.
+2. **Project Settings → API**: copy the Project URL and the **anon / publishable** key into [docs/config.js](docs/config.js). That key is public by design; the rules in `supabase.sql` decide what it can do. Never use the `service_role` key.
 
-```json
-["Anna", "Ben", "Chloé", "David"]
+## 2. Set your team names
+
+In [docs/config.js](docs/config.js):
+
+```js
+export const TEAM_NAMES = ["Anna", "Ben", "Chloé", "David"];
 ```
 
-Then run `npm run deploy`. Nobody can change the names from the website.
+Commit and push. Nobody can change the names from the website.
 
-## 2. Run locally
+## 3. Run locally
+
+Any static server works, for example:
 
 ```sh
-npm install
-npm run dev
+npx serve docs
 ```
 
-Open http://localhost:8787. To act as different people, use a private window or another browser for each one.
+To act as different people, use a private window or another browser for each one.
 
-## 3. Deploy and share
+## 4. Publish on GitHub Pages
 
-```sh
-npx wrangler login   # one time
-npm run deploy
-```
+GitHub repo → **Settings → Pages → Deploy from a branch → `main` / `/docs` → Save**. A minute later the page is at `https://<user>.github.io/<repo>/`. Every push to `main` updates it. On the free GitHub plan the repo must be public.
 
-Wrangler prints the URL (`https://team-checkin.<your-subdomain>.workers.dev`). Share it with the team; it stays the same every meeting. To use your own domain, go to Cloudflare dashboard → Workers & Pages → team-checkin → Settings → Domains & Routes.
-
-Changing the team later: edit `team.json` and run `npm run deploy` again.
+Free Supabase projects pause after about a week without use; unpause from the Supabase dashboard.
 
 ## How it works
 
@@ -45,5 +46,5 @@ Changing the team later: edit `team.json` and run `npm run deploy` again.
 
 ## Customising
 
-- **Reactions:** edit `GROUPS` in `public/app.js` (30 emoji: 4 mood groups + Wildcards). Nothing to change on the server. Cheers: `CHEERS` in both `public/app.js` and `src/index.js`.
-- **Look:** design tokens at the top of `public/styles.css`, based on `styleguide/`. The MB Corpo fonts are used only if installed locally; otherwise Georgia and the system font are used.
+- **Reactions:** edit `GROUPS` in `docs/app.js` (30 emoji: 4 mood groups + Wildcards). Cheers: `CHEERS` in the same file.
+- **Look:** design tokens at the top of `docs/styles.css`, based on `styleguide/`. The MB Corpo fonts are used only if installed locally; otherwise Georgia and the system font are used.

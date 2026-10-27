@@ -1,3 +1,9 @@
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/+esm";
+import { SUPABASE_URL, SUPABASE_KEY, TEAM_NAMES } from "./config.js";
+
+const TEAM = [...new Set(TEAM_NAMES.map((n) => String(n).trim()).filter(Boolean))];
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // Reactions, grouped from best to roughest. `score` drives the team vibe headline.
 const GROUPS = [
   {
@@ -55,8 +61,9 @@ const GROUPS = [
 const REACTION = Object.fromEntries(GROUPS.flatMap((g) =>
   g.reactions.map((r) => [r.id, { ...r, score: g.score }])));
 
-// Quick cheers during the why-round. Keep in sync with CHEERS in src/index.js.
+// Quick cheers during the why-round. Sent live to everyone, not stored.
 const CHEERS = ["👏", "❤️", "😂", "💯", "🙌", "🫶"];
+const CHEER_INTERVAL_MS = 250;
 
 const VIBES = [
   { min: 3.5, emoji: "🚀", text: "The team is flying high" },
@@ -198,10 +205,12 @@ function announce(prev, next) {
 
 const S = {
   me: tabStore.get("checkin:me"), // a team name, WATCHING, or null; fresh visits start at the name list
-  ws: null,
   state: null,
+  data: null, // { reactions, order, speaker, shuffled } as last read from the database
+  here: [], // names with the page open, from Realtime presence
   online: false,
-  retries: 0,
+  loads: 0,
+  lastCheer: 0,
   pickedHere: new Set(), // names this device has reacted as since loading
   spin: null, // name shown while the random-order wheel spins, else null
 };
@@ -230,50 +239,107 @@ function spinWheel(order) {
   step();
 }
 
-function connect() {
-  const proto = location.protocol === "https:" ? "wss" : "ws";
-  const ws = new WebSocket(`${proto}://${location.host}/api/ws`);
-  S.ws = ws;
-
-  ws.addEventListener("open", () => {
-    S.retries = 0;
-    S.online = true;
-    ws.send(JSON.stringify({ type: "iam", name: S.me }));
-    render();
-  });
-
-  ws.addEventListener("message", (event) => {
-    let msg;
-    try { msg = JSON.parse(event.data); } catch { return; }
-    if (msg.type === "cheer") {
-      burst(document.querySelector(".spotlight-emoji") ?? document.querySelector(".tiles"), msg.emoji, 4);
-      return;
-    }
-    if (msg.type !== "state") return;
-    const prev = S.state;
-    S.state = msg;
-    if (prev && prev.speaker < 0 && msg.speaker === 0 && msg.shuffled) spinWheel(msg.order);
-    else render();
-    announce(prev, msg);
-  });
-
-  ws.addEventListener("close", () => {
-    S.online = false;
-    render();
-    setTimeout(connect, Math.min(10000, 500 * 2 ** S.retries++));
-  });
+/** Combines database rows and presence into the state the page renders, and plays effects. */
+function publish() {
+  if (!S.data) return;
+  const prev = S.state;
+  const next = { team: TEAM, online: TEAM.filter((n) => S.here.includes(n)), ...S.data };
+  S.state = next;
+  if (prev && prev.speaker < 0 && next.speaker === 0 && next.shuffled) spinWheel(next.order);
+  else render();
+  announce(prev, next);
 }
 
-function send(msg) {
-  if (S.ws?.readyState !== WebSocket.OPEN) return false;
-  S.ws.send(JSON.stringify(msg));
-  return true;
+// Both tables are tiny, so every change just re-reads them.
+async function load() {
+  const seq = ++S.loads;
+  const [reactions, round] = await Promise.all([
+    db.from("reactions").select("name, reaction"),
+    db.from("round").select("order:speakers, speaker, shuffled").single(),
+  ]);
+  if (seq !== S.loads) return; // a newer read is on its way
+  if (reactions.error || round.error) return console.error(reactions.error ?? round.error);
+  S.data = { reactions: Object.fromEntries(reactions.data.map((r) => [r.name, r.reaction])), ...round.data };
+  publish();
+}
+
+const channel = db.channel("team", { config: { broadcast: { self: true } } });
+
+function connect() {
+  channel
+    .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, load)
+    .on("postgres_changes", { event: "*", schema: "public", table: "round" }, load)
+    .on("presence", { event: "sync" }, () => {
+      S.here = Object.values(channel.presenceState()).flat().map((p) => p.name);
+      publish();
+    })
+    .on("broadcast", { event: "cheer" }, ({ payload }) => {
+      if (!CHEERS.includes(payload?.emoji)) return;
+      burst(document.querySelector(".spotlight-emoji") ?? document.querySelector(".tiles"), payload.emoji, 4);
+    })
+    // Supabase reconnects by itself; re-read on every (re)connect to catch missed changes.
+    .subscribe((status) => {
+      S.online = status === "SUBSCRIBED";
+      if (S.online) {
+        channel.track({ name: S.me });
+        load();
+      }
+      render();
+    });
+}
+
+// Writes go to the database; every open page (this one too) re-reads on the change event.
+async function write(query) {
+  const { error } = await query;
+  if (error) console.error(error);
+}
+
+function setReaction(reaction) {
+  return write(reaction
+    ? db.from("reactions").upsert({ name: S.me, reaction })
+    : db.from("reactions").delete().eq("name", S.me));
+}
+
+// With `fromSpeaker`, only applies if nobody moved the round on meanwhile (double clicks).
+function setRound(fields, fromSpeaker) {
+  let query = db.from("round").update(fields).eq("id", 1);
+  if (fromSpeaker !== undefined) query = query.eq("speaker", fromSpeaker);
+  return write(query);
+}
+
+function startRound(shuffled) {
+  const order = TEAM.filter((name) => S.state.reactions[name]);
+  if (!order.length) return;
+  if (shuffled) shuffle(order);
+  return setRound({ speakers: order, speaker: 0, shuffled });
+}
+
+function endRound() {
+  return setRound({ speakers: [], speaker: -1, shuffled: false });
+}
+
+function moveSpeaker(delta) {
+  const { speaker, order } = S.state;
+  if (speaker < 0 || speaker + delta < 0 || speaker + delta > order.length) return;
+  return setRound({ speaker: speaker + delta }, speaker);
+}
+
+async function reset() {
+  await write(db.from("reactions").delete().neq("name", ""));
+  await endRound();
+}
+
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+    [list[i], list[j]] = [list[j], list[i]];
+  }
 }
 
 function setMe(name) {
   S.me = name;
   tabStore.set("checkin:me", name ?? "");
-  send({ type: "iam", name });
+  if (S.online) channel.track({ name });
   render();
   scrollTo({ top: 0 });
 }
@@ -290,7 +356,7 @@ function pickName(name) {
  */
 function leave({ wrongName = false } = {}) {
   if (wrongName && S.pickedHere.has(S.me) && S.state?.reactions[S.me]) {
-    send({ type: "react", reaction: null });
+    setReaction(null);
   }
   S.pickedHere.delete(S.me);
   setMe(null);
@@ -532,26 +598,29 @@ document.addEventListener("click", async (event) => {
     case "switch": return leave();
     case "wrong-name": return leave({ wrongName: true });
     case "react": {
+      if (!S.online) return;
       const id = target.dataset.id;
       const unpick = S.state?.reactions[S.me] === id;
-      if (send({ type: "react", reaction: unpick ? null : id })) {
-        S.pickedHere.add(S.me);
-        if (!unpick) burst(target, REACTION[id].emoji);
-      }
-      return;
+      S.pickedHere.add(S.me);
+      if (!unpick) burst(target, REACTION[id].emoji);
+      return setReaction(unpick ? null : id);
     }
-    case "cheer": return send({ type: "cheer", emoji: target.dataset.emoji });
-    case "start": return send({ type: "start", shuffle: false });
-    case "start-shuffled": return send({ type: "start", shuffle: true });
-    case "next": return send({ type: "next" });
-    case "prev": return send({ type: "prev" });
-    case "end": return send({ type: "end" });
+    case "cheer": {
+      if (Date.now() - S.lastCheer < CHEER_INTERVAL_MS) return;
+      S.lastCheer = Date.now();
+      return channel.send({ type: "broadcast", event: "cheer", payload: { emoji: target.dataset.emoji } });
+    }
+    case "start": return startRound(false);
+    case "start-shuffled": return startRound(true);
+    case "next": return moveSpeaker(1);
+    case "prev": return moveSpeaker(-1);
+    case "end": return endRound();
     case "reset":
       if (await confirmDialog({
         title: "Reset check-in?",
         body: "All reactions are cleared for everyone. This cannot be undone.",
         ok: "Reset",
-      })) send({ type: "reset" });
+      })) reset();
       return;
   }
 });
@@ -562,7 +631,7 @@ document.getElementById("app").innerHTML = `
   <div class="glow" aria-hidden="true"></div>
   <header class="site-header">
     <div class="container">
-      <a class="brand" href="/" data-action="home" title="Back to start">Team Check-in</a>
+      <a class="brand" href="./" data-action="home" title="Back to start">Team Check-in</a>
       <div class="header-live" id="live"></div>
       <div class="header-actions">
         <div id="who"></div>
@@ -578,4 +647,3 @@ document.getElementById("app").innerHTML = `
 
 render();
 connect();
-setInterval(() => S.ws?.readyState === WebSocket.OPEN && S.ws.send("ping"), 25000);
