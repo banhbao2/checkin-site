@@ -207,6 +207,7 @@ button { font: inherit; color: inherit; }
   font-size: 14px;
   cursor: pointer;
   padding: 4px 0;
+  white-space: nowrap;
 }
 .link-btn:hover { text-decoration: underline; }
 .icon-btn {
@@ -428,7 +429,6 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
   transition: transform 0.2s var(--ease-spring), background-color 0.15s, border-color 0.15s;
 }
-.reaction:hover { transform: scale(1.12); background: var(--accent-soft); z-index: 1; }
 .reaction:active { transform: scale(0.92); }
 .reaction:disabled { cursor: default; opacity: 0.4; transform: none; background: var(--overlay); }
 .reaction[aria-checked="true"] {
@@ -481,10 +481,8 @@ button { font: inherit; color: inherit; }
 }
 .tile:not(.is-online):not(.has-reaction) { opacity: var(--dim); }
 .tile.is-me { border-color: var(--accent); }
-.tile:hover { border-color: var(--accent); }
 /* Before a name is picked, every tile reads as a button: dashed accent outline, nothing dimmed. */
 .tiles.is-choosing .tile { border: 1px dashed var(--accent); opacity: 1; }
-.tiles.is-choosing .tile:hover { background: var(--accent-soft); }
 .tile:has(.tile-name:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tile-presence {
   position: absolute;
@@ -647,7 +645,6 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
   transition: transform 0.2s var(--ease-spring), background-color 0.15s;
 }
-.cheer:hover { transform: scale(1.25); background: var(--accent-soft); }
 .cheer:active { transform: scale(0.9); }
 
 /* ── Live feed & effects ────────────────────── */
@@ -719,6 +716,16 @@ button { font: inherit; color: inherit; }
 @media (max-width: 480px) {
   .controls .btn { flex: 1; }
   .controls .btn-danger { margin-left: 0; }
+  /* More room for the 6-wide emoji grid, so each tap target stays near 44px. */
+  .picker { padding: var(--space-base); }
+}
+
+/* Touch screens keep :hover after a tap, which would leave emoji scaled up and tiles outlined. */
+@media (hover: hover) {
+  .reaction:not(:disabled):hover { transform: scale(1.12); background: var(--accent-soft); z-index: 1; }
+  .tile:hover { border-color: var(--accent); }
+  .tiles.is-choosing .tile:hover { background: var(--accent-soft); }
+  .cheer:hover { transform: scale(1.25); background: var(--accent-soft); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -608,7 +608,7 @@ function heroHtml(st) {
   return `
     <section class="hero hero-compact">
       <div class="hero-text">
-      <p class="eyebrow">${esc(today())} · Check-in</p>
+      <p class="eyebrow">${esc(today())} · Check&#8209;in</p>
       <h1 class="headline">${vibe
         ? `${esc(L(vibe.text))} <span class="vibe-emoji" aria-hidden="true">${emo(vibe.emoji)}</span>`
         : t("howIsEveryone")}</h1>
