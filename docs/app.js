@@ -643,6 +643,7 @@ document.addEventListener("click", async (event) => {
   switch (action) {
     case "theme": return toggleTheme();
     case "home":
+      if (!S.me) return; // name picker or start page: follow the link to the start page
       event.preventDefault();
       return leave();
     case "pick-name": return pickName(target.dataset.name);
@@ -715,7 +716,7 @@ document.getElementById("app").innerHTML = `
   <div class="glow" aria-hidden="true"></div>
   <header class="site-header">
     <div class="container">
-      <a class="brand" href="${ROOM ? `?room=${ROOM}` : "./"}" data-action="home" title="Back to start">Team Check-in</a>
+      <a class="brand" href="./" data-action="home" title="Back to start">Team Check-in</a>
       <div class="header-live" id="live"></div>
       <div class="header-actions">
         ${ROOM ? `<button class="btn btn-ghost" data-action="share" title="Copy the link to this check-in">Share</button>` : ""}
