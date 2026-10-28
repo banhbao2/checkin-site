@@ -26,70 +26,166 @@ async function createRoom() {
 // Reactions, grouped from best to roughest. `score` drives the team vibe headline.
 const GROUPS = [
   {
-    title: "Flying high", score: 4, reactions: [
-      { id: "fire", emoji: "🔥", label: "On fire" },
-      { id: "rocket", emoji: "🚀", label: "Ready to launch" },
-      { id: "starstruck", emoji: "🤩", label: "Excited" },
-      { id: "party", emoji: "🥳", label: "Celebrating" },
-      { id: "cool", emoji: "😎", label: "Confident" },
-      { id: "unicorn", emoji: "🦄", label: "Magical" },
+    title: { de: "Im Höhenflug", en: "Flying high" }, score: 4, reactions: [
+      { id: "fire", emoji: "🔥", label: { de: "Brennt drauf", en: "On fire" } },
+      { id: "rocket", emoji: "🚀", label: { de: "Startklar", en: "Ready to launch" } },
+      { id: "starstruck", emoji: "🤩", label: { de: "Begeistert", en: "Excited" } },
+      { id: "party", emoji: "🥳", label: { de: "In Feierlaune", en: "Celebrating" } },
+      { id: "cool", emoji: "😎", label: { de: "Selbstbewusst", en: "Confident" } },
+      { id: "unicorn", emoji: "🦄", label: { de: "Magisch", en: "Magical" } },
     ],
   },
   {
-    title: "Feeling good", score: 3, reactions: [
-      { id: "happy", emoji: "😊", label: "Happy" },
-      { id: "zen", emoji: "🧘", label: "Zen" },
-      { id: "sunny", emoji: "☀️", label: "Sunny" },
-      { id: "focus", emoji: "🎧", label: "In the zone" },
-      { id: "growing", emoji: "🌱", label: "Growing" },
-      { id: "strong", emoji: "💪", label: "Strong" },
+    title: { de: "Gut drauf", en: "Feeling good" }, score: 3, reactions: [
+      { id: "happy", emoji: "😊", label: { de: "Glücklich", en: "Happy" } },
+      { id: "zen", emoji: "🧘", label: { de: "Zen", en: "Zen" } },
+      { id: "sunny", emoji: "☀️", label: { de: "Sonnig", en: "Sunny" } },
+      { id: "focus", emoji: "🎧", label: { de: "Im Flow", en: "In the zone" } },
+      { id: "growing", emoji: "🌱", label: { de: "Am Wachsen", en: "Growing" } },
+      { id: "strong", emoji: "💪", label: { de: "Stark", en: "Strong" } },
     ],
   },
   {
-    title: "So-so", score: 2, reactions: [
-      { id: "neutral", emoji: "😐", label: "Neutral" },
-      { id: "thinking", emoji: "🤔", label: "Pondering" },
-      { id: "coffee", emoji: "☕", label: "Need coffee" },
-      { id: "cloudy", emoji: "🌥️", label: "Cloudy" },
-      { id: "turtle", emoji: "🐢", label: "Slow start" },
-      { id: "melting", emoji: "🥵", label: "Melting" },
+    title: { de: "Geht so", en: "So-so" }, score: 2, reactions: [
+      { id: "neutral", emoji: "😐", label: { de: "Neutral", en: "Neutral" } },
+      { id: "thinking", emoji: "🤔", label: { de: "Nachdenklich", en: "Pondering" } },
+      { id: "coffee", emoji: "☕", label: { de: "Brauche Kaffee", en: "Need coffee" } },
+      { id: "cloudy", emoji: "🌥️", label: { de: "Bewölkt", en: "Cloudy" } },
+      { id: "turtle", emoji: "🐢", label: { de: "Langsamer Start", en: "Slow start" } },
+      { id: "melting", emoji: "🥵", label: { de: "Am Schmelzen", en: "Melting" } },
     ],
   },
   {
-    title: "Rough day", score: 1, reactions: [
-      { id: "tired", emoji: "😴", label: "Tired" },
-      { id: "overwhelmed", emoji: "🤯", label: "Overwhelmed" },
-      { id: "frustrated", emoji: "😤", label: "Frustrated" },
-      { id: "sad", emoji: "😢", label: "Down" },
-      { id: "sick", emoji: "🤒", label: "Unwell" },
-      { id: "storm", emoji: "⛈️", label: "Stormy" },
+    title: { de: "Harter Tag", en: "Rough day" }, score: 1, reactions: [
+      { id: "tired", emoji: "😴", label: { de: "Müde", en: "Tired" } },
+      { id: "overwhelmed", emoji: "🤯", label: { de: "Überfordert", en: "Overwhelmed" } },
+      { id: "frustrated", emoji: "😤", label: { de: "Frustriert", en: "Frustrated" } },
+      { id: "sad", emoji: "😢", label: { de: "Niedergeschlagen", en: "Down" } },
+      { id: "sick", emoji: "🤒", label: { de: "Angeschlagen", en: "Unwell" } },
+      { id: "storm", emoji: "⛈️", label: { de: "Stürmisch", en: "Stormy" } },
     ],
   },
   {
     // Fun extras; they don't count towards the team vibe.
-    title: "Wildcards", score: null, reactions: [
-      { id: "juggling", emoji: "🤹", label: "Juggling a lot" },
-      { id: "octopus", emoji: "🐙", label: "Multitasking" },
-      { id: "brain", emoji: "🧠", label: "Big brain day" },
-      { id: "sloth", emoji: "🦥", label: "Sloth mode" },
-      { id: "pizza", emoji: "🍕", label: "Hungry" },
-      { id: "beach", emoji: "🏖️", label: "Holiday mood" },
+    title: { de: "Joker", en: "Wildcards" }, score: null, reactions: [
+      { id: "juggling", emoji: "🤹", label: { de: "Viel zu jonglieren", en: "Juggling a lot" } },
+      { id: "octopus", emoji: "🐙", label: { de: "Multitasking", en: "Multitasking" } },
+      { id: "brain", emoji: "🧠", label: { de: "Geistesblitz-Tag", en: "Big brain day" } },
+      { id: "sloth", emoji: "🦥", label: { de: "Faultier-Modus", en: "Sloth mode" } },
+      { id: "pizza", emoji: "🍕", label: { de: "Hungrig", en: "Hungry" } },
+      { id: "beach", emoji: "🏖️", label: { de: "Urlaubsstimmung", en: "Holiday mood" } },
     ],
   },
 ];
 const REACTION = Object.fromEntries(GROUPS.flatMap((g) =>
   g.reactions.map((r) => [r.id, { ...r, score: g.score }])));
 
-// Quick cheers during the why-round. Sent live to everyone, not stored.
+// Quick cheers during the lightning round. Sent live to everyone, not stored.
 const CHEERS = ["👏", "❤️", "😂", "💯", "🙌", "🤗"];
 const CHEER_INTERVAL_MS = 250;
 
 const VIBES = [
-  { min: 3.5, emoji: "🚀", text: "The team is flying high" },
-  { min: 2.75, emoji: "😊", text: "The team is feeling good" },
-  { min: 2, emoji: "🌤️", text: "A mixed bag today" },
-  { min: 0, emoji: "🤗", text: "A tough day. Be kind." },
+  { min: 3.5, emoji: "🚀", text: { de: "Das Team ist im Höhenflug", en: "The team is flying high" } },
+  { min: 2.75, emoji: "😊", text: { de: "Das Team ist gut drauf", en: "The team is feeling good" } },
+  { min: 2, emoji: "🌤️", text: { de: "Heute ein bunter Mix", en: "A mixed bag today" } },
+  { min: 0, emoji: "🤗", text: { de: "Ein harter Tag. Seid nett zueinander.", en: "A tough day. Be kind." } },
 ];
+
+// UI text. Callers escape names and labels before passing them in.
+const STRINGS = {
+  de: {
+    locale: "de-DE",
+    langBtn: "EN", langTitle: "Switch to English",
+    homeTitle: "Zurück zum Start", share: "Teilen", shareTitle: "Link zu diesem Check-in kopieren",
+    themeTitle: "Hell / Dunkel wechseln",
+    live: "Live", offline: "Offline", reconnecting: "Verbinde neu…", connecting: "Verbinde…",
+    hereCount: (n, total) => `${n} von ${total} da`,
+    startTitle: "Check-in starten", missingTitle: "Diesen Raum gibt es nicht.",
+    startLead: "Erstelle einen Raum, teile den Link und füge die Teilnehmenden hinzu. Alle mit dem Link können alles.",
+    missingLead: "Prüfe den Link oder erstelle einen neuen Raum. Räume, die 90 Tage niemand öffnet, werden gelöscht.",
+    createRoom: "Raum erstellen", lastRoom: "Zurück zum letzten Raum",
+    howIsEveryone: "Wie geht’s euch heute?",
+    ofCheckedIn: (total) => `von ${total} eingecheckt`,
+    whoAreYou: "Wer bist du?",
+    whoHint: "Tippe zuerst auf dem Board auf deinen Namen. Dann wähle hier deine Stimmung.",
+    whoHintEmpty: "Füge unter dem Board deinen Namen hinzu und tippe ihn dann an.",
+    yourVibe: (name) => `Deine Stimmung, ${name}`,
+    notMe: (name) => `Nicht ${name}?`,
+    notMeTitle: "Entfernt deine Auswahl, damit du deinen richtigen Namen wählen kannst",
+    pickHint: "Tippe eine an. Alle sehen es live.",
+    speakingNow: "Ist dran", done: "✓ Fertig", choosing: "Wählt…", notHere: "Noch nicht da",
+    online: "Online", away: "Abwesend", you: "du", unpick: "Nochmal tippen zum Abwählen",
+    remove: (name) => `${name} entfernen`,
+    iAm: (name) => `Ich bin ${name}`,
+    boardRound: "Das Team · Blitzlicht", boardChoosing: "Wer bist du? Tippe deinen Namen an", boardLive: "Das Team, live",
+    boardEmpty: "Noch niemand da. Füge unten Namen hinzu und teile dann den Link.",
+    addPlaceholder: "Name hinzufügen", addAria: "Name zum Hinzufügen", add: "Hinzufügen", invite: "Einladungslink kopieren",
+    nameTaken: (name) => `„${name}“ ist schon auf dem Board. Tippe den Namen dort an.`,
+    startRound: "Blitzlicht starten", randomOrder: "Zufällige Reihenfolge", reset: "Zurücksetzen",
+    roundDone: "Blitzlicht · fertig", thanks: "Danke, Team.", back: "Zurück", close: "Schließen",
+    spinTitle: "Zufällige Reihenfolge · wer fängt an?", spinning: "Dreht…",
+    roundStep: (i, total) => `Blitzlicht · ${i} von ${total}`,
+    yourTurn: "Du bist dran",
+    question: (label) => label ? `Was steckt hinter „${label}“?` : "Was steckt dahinter?",
+    sendCheer: "Jubel senden", cheer: (c) => `Jubel ${c}`,
+    previous: "Zurück", next: "Nächste Person", finish: "Abschließen", endRound: "Blitzlicht beenden",
+    joined: (name) => `<strong>${name}</strong> ist dabei`,
+    picked: (name, label) => `<strong>${name}</strong>: ${label}`,
+    linkCopied: "Link kopiert. Alle mit dem Link können beitreten und bearbeiten.", copyPrompt: "Diesen Link kopieren:",
+    removeTitle: (name) => `${name} entfernen?`,
+    removeBody: (name) => `${name} und die Auswahl werden für alle entfernt.`,
+    removeOk: "Entfernen", cancel: "Abbrechen",
+    resetTitle: "Check-in zurücksetzen?",
+    resetBody: "Alle Reaktionen werden für alle gelöscht. Das lässt sich nicht rückgängig machen.",
+    qrTitle: "Scannen zum Beitreten",
+  },
+  en: {
+    locale: "en-GB",
+    langBtn: "DE", langTitle: "Auf Deutsch umstellen",
+    homeTitle: "Back to start", share: "Share", shareTitle: "Copy the link to this check-in",
+    themeTitle: "Switch light / dark mode",
+    live: "Live", offline: "Offline", reconnecting: "Reconnecting…", connecting: "Connecting…",
+    hereCount: (n, total) => `${n} of ${total} here`,
+    startTitle: "Start a check-in", missingTitle: "This room doesn't exist.",
+    startLead: "Create a room, share its link and add the people joining. Everyone with the link can do everything.",
+    missingLead: "Check the link, or create a new room. Rooms nobody opens for 90 days are deleted.",
+    createRoom: "Create a room", lastRoom: "Back to your last room",
+    howIsEveryone: "How is everyone today?",
+    ofCheckedIn: (total) => `of ${total} checked in`,
+    whoAreYou: "Who are you?",
+    whoHint: "Tap your name on the board first. Then pick your vibe here.",
+    whoHintEmpty: "Add your name under the board, then tap it.",
+    yourVibe: (name) => `Your vibe, ${name}`,
+    notMe: (name) => `Not ${name}?`,
+    notMeTitle: "Removes your pick so you can choose your real name",
+    pickHint: "Tap one. Everyone sees it live.",
+    speakingNow: "Speaking now", done: "✓ Done", choosing: "Choosing…", notHere: "Not here yet",
+    online: "Online", away: "Away", you: "you", unpick: "Tap again to un-pick",
+    remove: (name) => `Remove ${name}`,
+    iAm: (name) => `I'm ${name}`,
+    boardRound: "The team · lightning round", boardChoosing: "Who are you? Tap your name", boardLive: "The team, live",
+    boardEmpty: "Nobody here yet. Add names below, then share the link.",
+    addPlaceholder: "Add a name", addAria: "Name to add", add: "Add", invite: "Copy link to invite",
+    nameTaken: (name) => `“${name}” is already on the board. Tap it there instead.`,
+    startRound: "Start lightning round", randomOrder: "Random order", reset: "Reset",
+    roundDone: "Lightning round · done", thanks: "Thanks, team.", back: "Back", close: "Close",
+    spinTitle: "Random order · who goes first?", spinning: "Spinning…",
+    roundStep: (i, total) => `Lightning round · ${i} of ${total}`,
+    yourTurn: "Your turn",
+    question: (label) => label ? `What’s behind “${label}”?` : "What’s behind it?",
+    sendCheer: "Send a cheer", cheer: (c) => `Cheer ${c}`,
+    previous: "Previous", next: "Next person", finish: "Finish", endRound: "End lightning round",
+    joined: (name) => `<strong>${name}</strong> joined`,
+    picked: (name, label) => `<strong>${name}</strong> is ${label.toLowerCase()}`,
+    linkCopied: "Link copied. Anyone with it can join and edit.", copyPrompt: "Copy this link:",
+    removeTitle: (name) => `Remove ${name}?`,
+    removeBody: (name) => `${name} and their reaction are removed for everyone.`,
+    removeOk: "Remove", cancel: "Cancel",
+    resetTitle: "Reset check-in?",
+    resetBody: "All reactions are cleared for everyone. This cannot be undone.",
+    qrTitle: "Scan to join",
+  },
+};
 
 const ICONS = {
   theme: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2v16a8 8 0 0 1 0-16Z"/></svg>',
@@ -131,12 +227,16 @@ function confirmDialog({ title, body, ok }) {
   dialog.querySelector("#confirm-title").textContent = title;
   dialog.querySelector("#confirm-body").textContent = body;
   dialog.querySelector("#confirm-ok").textContent = ok;
+  dialog.querySelector("#confirm-cancel").textContent = t("cancel");
   dialog.returnValue = "";
   dialog.showModal();
   return new Promise((resolve) => {
     dialog.addEventListener("close", () => resolve(dialog.returnValue === "ok"), { once: true });
   });
 }
+
+// Made in the browser, so the room link never goes to a third-party QR service. Filled in at boot.
+let qrSvg = "";
 
 // Re-render a region only when its markup changed, so running animations aren't restarted.
 const rendered = new Map();
@@ -155,6 +255,24 @@ function toggleTheme() {
   store.set("checkin:theme", next);
 }
 document.documentElement.dataset.theme = store.get("checkin:theme") || "light";
+
+// Language is per device: switching only changes what this viewer sees. German by default.
+let lang = store.get("checkin:lang") === "en" ? "en" : "de";
+document.documentElement.lang = lang;
+
+function t(key, ...args) {
+  const value = STRINGS[lang][key];
+  return typeof value === "function" ? value(...args) : value;
+}
+/** Picks this viewer's language from a `{ de, en }` text. */
+const L = (text) => text[lang];
+
+function toggleLang() {
+  lang = lang === "de" ? "en" : "de";
+  document.documentElement.lang = lang;
+  store.set("checkin:lang", lang);
+  render();
+}
 
 // ── Live effects ────────────────────────────────
 
@@ -207,7 +325,7 @@ function announce(prev, next) {
   if (!prev) return;
   for (const name of next.online) {
     if (!prev.online.includes(name) && name !== S.me) {
-      feed(`<span class="feed-emoji">${emo("👋")}</span><span><strong>${esc(name)}</strong> joined</span>`);
+      feed(`<span class="feed-emoji">${emo("👋")}</span><span>${t("joined", esc(name))}</span>`);
       pulse(tileFor(name), "is-joined");
     }
   }
@@ -219,7 +337,7 @@ function announce(prev, next) {
     pulse(tileFor(name), "is-popped");
     if (name === S.me) continue; // own picks already burst from the picker
     burst(tileFor(name)?.querySelector(".tile-emoji"), r?.emoji ?? "✨");
-    feed(`<span class="feed-emoji">${emo(r?.emoji ?? "✨")}</span><span><strong>${esc(name)}</strong> is ${esc((r?.label ?? "here").toLowerCase())}</span>`);
+    if (r) feed(`<span class="feed-emoji">${emo(r.emoji)}</span><span>${t("picked", esc(name), esc(L(r.label)))}</span>`);
   }
 }
 
@@ -419,11 +537,12 @@ function render() {
   const st = S.state;
   const isMember = Boolean(st?.team.includes(S.me));
 
+  patch("header", headerHtml());
   patch("live", st ? `
-    <span class="live-badge ${S.online ? "" : "is-off"}" title="${S.online ? "Live" : "Reconnecting…"}">
-      <span class="live-dot"></span>${S.online ? "Live" : "Offline"}
+    <span class="live-badge ${S.online ? "" : "is-off"}" title="${S.online ? t("live") : t("reconnecting")}">
+      <span class="live-dot"></span>${S.online ? t("live") : t("offline")}
     </span>
-    <span class="live-count">${st.online.length} of ${st.team.length} here</span>` : "");
+    <span class="live-count">${t("hereCount", st.online.length, st.team.length)}</span>` : "");
 
   if (!ROOM || S.missing) {
     patch("main", startHtml());
@@ -431,7 +550,7 @@ function render() {
   }
 
   if (!st) {
-    patch("main", `<p class="muted connecting">Connecting…</p>`);
+    patch("main", `<p class="muted connecting">${t("connecting")}</p>`);
     return;
   }
 
@@ -448,16 +567,16 @@ function render() {
       <section class="board-col">
         <div id="board"></div>
         <form class="add-name" data-form="add-name">
-          <input class="input" name="name" maxlength="60" required autocomplete="off" placeholder="Add a name" aria-label="Name to add">
-          <button class="btn btn-secondary">Add</button>
-          <button class="btn btn-ghost" type="button" data-action="share">Copy link to invite</button>
+          <input class="input" name="name" maxlength="60" required autocomplete="off" placeholder="${t("addPlaceholder")}" aria-label="${t("addAria")}">
+          <button class="btn btn-secondary">${t("add")}</button>
+          <button class="btn btn-ghost" type="button" data-action="share">${t("invite")}</button>
         </form>
         <div id="controls"></div>
       </section>
     </div>`);
   // Until a name is picked, the board (where you pick it) comes first on narrow screens.
   document.querySelector(".layout").classList.toggle("is-choosing", !isMember);
-  // During the why-round everyone sees the same focused view: spotlight + board, no picker.
+  // During the lightning round everyone sees the same focused view: spotlight + board, no picker.
   document.querySelector(".layout").classList.toggle("is-round", st.speaker >= 0);
   patch("top", st.speaker >= 0 ? spotlightHtml(st) : heroHtml(st));
   patch("picker-head", isMember ? pickerHeadHtml(st) : whoHtml(st));
@@ -471,13 +590,11 @@ function startHtml() {
   return `
     <section class="hero">
       <p class="eyebrow">${esc(today())}</p>
-      <h1 class="headline">${S.missing ? "This room doesn't exist." : "Start a check-in"}</h1>
-      <p class="lead">${S.missing
-        ? "Check the link, or create a new room. Rooms nobody opens for 90 days are deleted."
-        : "Create a room, share its link and add the people joining. Everyone with the link can do everything."}</p>
+      <h1 class="headline">${S.missing ? t("missingTitle") : t("startTitle")}</h1>
+      <p class="lead">${S.missing ? t("missingLead") : t("startLead")}</p>
       <div class="btn-row start-actions">
-        <button class="btn btn-primary" data-action="create-room">Create a room</button>
-        ${last && last !== ROOM ? `<a class="btn btn-secondary" href="?room=${esc(last)}">Back to your last room</a>` : ""}
+        <button class="btn btn-primary" data-action="create-room">${t("createRoom")}</button>
+        ${last && last !== ROOM ? `<a class="btn btn-secondary" href="?room=${esc(last)}">${t("lastRoom")}</a>` : ""}
       </div>
     </section>`;
 }
@@ -490,24 +607,25 @@ function heroHtml(st) {
   const vibe = avg === null ? null : VIBES.find((v) => avg >= v.min);
   return `
     <section class="hero hero-compact">
+      <div class="hero-text">
       <p class="eyebrow">${esc(today())} · Check-in</p>
       <h1 class="headline">${vibe
-        ? `${esc(vibe.text)} <span class="vibe-emoji" aria-hidden="true">${emo(vibe.emoji)}</span>`
-        : "How is everyone today?"}</h1>
-      <div class="meter" aria-label="${picked.length} of ${total} checked in">
+        ? `${esc(L(vibe.text))} <span class="vibe-emoji" aria-hidden="true">${emo(vibe.emoji)}</span>`
+        : t("howIsEveryone")}</h1>
+      <div class="meter" aria-label="${picked.length} ${t("ofCheckedIn", total)}">
         <div class="meter-track"><div class="meter-fill" style="width: ${total ? Math.round((picked.length / total) * 100) : 0}%"></div></div>
-        <span class="meter-label"><strong>${picked.length}</strong> of ${total} checked in</span>
+        <span class="meter-label"><strong>${picked.length}</strong> ${t("ofCheckedIn", total)}</span>
       </div>
+      </div>
+      ${qrSvg ? `<figure class="hero-qr">${qrSvg}<figcaption>${t("qrTitle")}</figcaption></figure>` : ""}
     </section>`;
 }
 
 function whoHtml(st) {
   return `
     <div class="picker-head">
-      <h2 class="section-label">Who are you?</h2>
-      <p class="picker-current">${st.team.length
-        ? "Tap your name on the board first. Then pick your vibe here."
-        : "Add your name under the board, then tap it."}</p>
+      <h2 class="section-label">${t("whoAreYou")}</h2>
+      <p class="picker-current">${st.team.length ? t("whoHint") : t("whoHintEmpty")}</p>
     </div>`;
 }
 
@@ -516,12 +634,12 @@ function pickerHeadHtml(st) {
   return `
     <div class="picker-head">
       <div class="picker-head-row">
-        <h2 class="section-label">Your vibe, ${esc(S.me)}</h2>
-        <button class="link-btn" data-action="wrong-name" title="Removes your pick so you can choose your real name">Not ${esc(S.me)}?</button>
+        <h2 class="section-label">${t("yourVibe", esc(S.me))}</h2>
+        <button class="link-btn" data-action="wrong-name" title="${t("notMeTitle")}">${t("notMe", esc(S.me))}</button>
       </div>
       <p class="picker-current" aria-live="polite">${r
-        ? `<span class="picker-current-emoji">${emo(r.emoji)}</span> ${esc(r.label)}`
-        : "Tap one. Everyone sees it live."}</p>
+        ? `<span class="picker-current-emoji">${emo(r.emoji)}</span> ${esc(L(r.label))}`
+        : t("pickHint")}</p>
     </div>`;
 }
 
@@ -529,12 +647,12 @@ function pickerHtml(st, isMember) {
   const mine = isMember ? st.reactions[S.me] : null;
   return GROUPS.map((g) => `
     <div class="picker-group">
-      <h3 class="picker-title">${g.title}</h3>
-      <div class="reactions" role="radiogroup" aria-label="${g.title}">
+      <h3 class="picker-title">${L(g.title)}</h3>
+      <div class="reactions" role="radiogroup" aria-label="${L(g.title)}">
         ${g.reactions.map((x) => `
-          <button class="reaction" role="radio" aria-checked="${mine === x.id}" data-action="react" data-id="${x.id}" title="${x.label}" ${isMember ? "" : "disabled"}>
+          <button class="reaction" role="radio" aria-checked="${mine === x.id}" data-action="react" data-id="${x.id}" title="${L(x.label)}" ${isMember ? "" : "disabled"}>
             <span class="reaction-emoji" aria-hidden="true">${emo(x.emoji)}</span>
-            <span class="reaction-label">${x.label}</span>
+            <span class="reaction-label">${L(x.label)}</span>
           </button>`).join("")}
       </div>
     </div>`).join("");
@@ -555,20 +673,20 @@ function boardHtml(st) {
       speaking ? "is-current" : "",
       done ? "is-shared" : "",
     ].join(" ");
-    const label = speaking ? "Speaking now" : done ? "✓ Done" : r ? r.label : here ? "Choosing…" : "Not here yet";
+    const label = speaking ? t("speakingNow") : done ? t("done") : r ? L(r.label) : here ? t("choosing") : t("notHere");
     return `
       <li class="tile ${cls}" data-name="${esc(name)}">
-        <button class="tile-remove" data-action="remove-name" data-name="${esc(name)}" aria-label="Remove ${esc(name)}" title="Remove ${esc(name)}">×</button>
-        <span class="tile-presence" title="${here ? "Online" : "Away"}"></span>
+        <button class="tile-remove" data-action="remove-name" data-name="${esc(name)}" aria-label="${t("remove", esc(name))}" title="${t("remove", esc(name))}">×</button>
+        <span class="tile-presence" title="${here ? t("online") : t("away")}"></span>
         <span class="tile-emoji" aria-hidden="true">${r ? emo(r.emoji) : `<span class="tile-waiting"><i></i><i></i><i></i></span>`}</span>
-        <button class="tile-name" data-action="pick-name" data-name="${esc(name)}" aria-pressed="${name === S.me}" title="${name === S.me ? "Tap again to un-pick" : `I'm ${esc(name)}`}">${esc(name)}${name === S.me ? " · you" : ""}</button>
+        <button class="tile-name" data-action="pick-name" data-name="${esc(name)}" aria-pressed="${name === S.me}" title="${name === S.me ? t("unpick") : t("iAm", esc(name))}">${esc(name)}${name === S.me ? ` · ${t("you")}` : ""}</button>
         <span class="tile-label">${esc(label)}</span>
       </li>`;
   }).join("");
   const choosing = !st.team.includes(S.me);
   return `
-    <h2 class="section-label">${inRound ? "The team · why-round" : choosing && tiles ? "Who are you? Tap your name" : "The team, live"}</h2>
-    ${tiles ? `<ul class="tiles ${choosing ? "is-choosing" : ""}">${tiles}</ul>` : `<p class="muted">Nobody here yet. Add names below, then share the link.</p>`}`;
+    <h2 class="section-label">${inRound ? t("boardRound") : choosing && tiles ? t("boardChoosing") : t("boardLive")}</h2>
+    ${tiles ? `<ul class="tiles ${choosing ? "is-choosing" : ""}">${tiles}</ul>` : `<p class="muted">${t("boardEmpty")}</p>`}`;
 }
 
 // Random order is the default; unticked, the round goes through the board left to right. Remembered per device.
@@ -579,9 +697,9 @@ function controlsHtml(st) {
   const any = st.team.some((n) => st.reactions[n]);
   return `
     <div class="controls">
-      <button class="btn btn-primary" data-action="start" ${any ? "" : "disabled"}>Start why-round</button>
-      <label class="toggle"><input type="checkbox" data-action="random-order" ${randomOrder() ? "checked" : ""}> Random order</label>
-      <button class="btn btn-ghost" data-action="reset">Reset</button>
+      <button class="btn btn-primary" data-action="start" ${any ? "" : "disabled"}>${t("startRound")}</button>
+      <label class="toggle"><input type="checkbox" data-action="random-order" ${randomOrder() ? "checked" : ""}> ${t("randomOrder")}</label>
+      <button class="btn btn-danger" data-action="reset">${t("reset")}</button>
     </div>`;
 }
 
@@ -590,12 +708,12 @@ function spotlightHtml(st) {
   if (st.speaker >= total) {
     return `
       <section class="glass spotlight">
-        <p class="eyebrow">Why-round · done</p>
+        <p class="eyebrow">${t("roundDone")}</p>
         <div class="spotlight-emoji" aria-hidden="true">${emo("🎉")}</div>
-        <h1 class="spotlight-name">Thanks, team.</h1>
+        <h1 class="spotlight-name">${t("thanks")}</h1>
         <div class="btn-row">
-          <button class="btn btn-secondary" data-action="prev">Back</button>
-          <button class="btn btn-primary" data-action="end">Close</button>
+          <button class="btn btn-secondary" data-action="prev">${t("back")}</button>
+          <button class="btn btn-primary" data-action="end">${t("close")}</button>
         </div>
       </section>`;
   }
@@ -603,10 +721,10 @@ function spotlightHtml(st) {
     const r = REACTION[st.reactions[S.spin]];
     return `
       <section class="glass spotlight is-spinning">
-        <p class="eyebrow">Random order · who goes first?</p>
+        <p class="eyebrow">${t("spinTitle")}</p>
         <div class="spotlight-emoji" aria-hidden="true">${emo(r?.emoji ?? "❔")}</div>
         <h1 class="spotlight-name">${esc(S.spin)}</h1>
-        <p class="spotlight-question">${emo("🎰")} Spinning…</p>
+        <p class="spotlight-question">${emo("🎰")} ${t("spinning")}</p>
       </section>`;
   }
   const name = st.order[st.speaker];
@@ -614,23 +732,36 @@ function spotlightHtml(st) {
   const isMe = name === S.me;
   return `
     <section class="glass spotlight" aria-live="polite">
-      <p class="eyebrow">Why-round · ${st.speaker + 1} of ${total}</p>
+      <p class="eyebrow">${t("roundStep", st.speaker + 1, total)}</p>
       <div class="spotlight-emoji" aria-hidden="true" data-k="${esc(name)}">${emo(r?.emoji ?? "❔")}</div>
-      <h1 class="spotlight-name">${isMe ? "Your turn" : esc(name)}</h1>
-      <p class="spotlight-question">Why ${isMe ? "did you" : `did ${esc(name)}`} pick “${esc(r?.label ?? "this")}”?</p>
-      <div class="cheers" role="group" aria-label="Send a cheer">
-        ${CHEERS.map((c) => `<button class="cheer" data-action="cheer" data-emoji="${c}" aria-label="Cheer ${c}">${emo(c)}</button>`).join("")}
+      <h1 class="spotlight-name">${isMe ? t("yourTurn") : esc(name)}</h1>
+      <p class="spotlight-question">${t("question", r && esc(L(r.label)))}</p>
+      <div class="cheers" role="group" aria-label="${t("sendCheer")}">
+        ${CHEERS.map((c) => `<button class="cheer" data-action="cheer" data-emoji="${c}" aria-label="${t("cheer", c)}">${emo(c)}</button>`).join("")}
       </div>
       <div class="btn-row">
-        <button class="btn btn-secondary" data-action="prev" ${st.speaker === 0 ? "disabled" : ""}>Previous</button>
-        <button class="btn btn-primary" data-action="next">${st.speaker === total - 1 ? "Finish" : "Next person"}</button>
+        <button class="btn btn-secondary" data-action="prev" ${st.speaker === 0 ? "disabled" : ""}>${t("previous")}</button>
+        <button class="btn btn-primary" data-action="next">${st.speaker === total - 1 ? t("finish") : t("next")}</button>
       </div>
-      <button class="btn btn-ghost spotlight-end" data-action="end">End why-round</button>
+      <button class="btn btn-ghost spotlight-end" data-action="end">${t("endRound")}</button>
     </section>`;
 }
 
+function headerHtml() {
+  return `
+    <div class="container">
+      <a class="brand" href="./" data-action="home" title="${t("homeTitle")}">Team Check-in</a>
+      <div class="header-live" id="live"></div>
+      <div class="header-actions">
+        ${ROOM ? `<button class="btn btn-ghost" data-action="share" title="${t("shareTitle")}">${t("share")}</button>` : ""}
+        <button class="icon-btn lang-btn" data-action="lang" title="${t("langTitle")}" aria-label="${t("langTitle")}">${t("langBtn")}</button>
+        <button class="icon-btn" data-action="theme" title="${t("themeTitle")}" aria-label="${t("themeTitle")}">${ICONS.theme}</button>
+      </div>
+    </div>`;
+}
+
 function today() {
-  return new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  return new Date().toLocaleDateString(t("locale"), { weekday: "long", day: "numeric", month: "long" });
 }
 
 // ── Events ──────────────────────────────────────
@@ -642,6 +773,7 @@ document.addEventListener("click", async (event) => {
 
   switch (action) {
     case "theme": return toggleTheme();
+    case "lang": return toggleLang();
     case "home":
       if (!S.me) return; // name picker or start page: follow the link to the start page
       event.preventDefault();
@@ -664,9 +796,9 @@ document.addEventListener("click", async (event) => {
     case "share":
       try {
         await navigator.clipboard.writeText(location.href);
-        feed(`<span class="feed-emoji">${emo("🔗")}</span><span>Link copied. Anyone with it can join and edit.</span>`);
+        feed(`<span class="feed-emoji">${emo("🔗")}</span><span>${t("linkCopied")}</span>`);
       } catch {
-        prompt("Copy this link:", location.href);
+        prompt(t("copyPrompt"), location.href);
       }
       return;
     case "create-room":
@@ -677,9 +809,9 @@ document.addEventListener("click", async (event) => {
     case "remove-name": {
       const name = target.dataset.name;
       if (await confirmDialog({
-        title: `Remove ${name}?`,
-        body: `${name} and their reaction are removed for everyone.`,
-        ok: "Remove",
+        title: t("removeTitle", name),
+        body: t("removeBody", name),
+        ok: t("removeOk"),
       })) removeName(name);
       return;
     }
@@ -690,9 +822,9 @@ document.addEventListener("click", async (event) => {
     case "end": return endRound();
     case "reset":
       if (await confirmDialog({
-        title: "Reset check-in?",
-        body: "All reactions are cleared for everyone. This cannot be undone.",
-        ok: "Reset",
+        title: t("resetTitle"),
+        body: t("resetBody"),
+        ok: t("reset"),
       })) reset();
       return;
   }
@@ -704,26 +836,27 @@ document.addEventListener("submit", async (event) => {
   const input = event.target.elements.name;
   const typed = input.value.trim().replace(/\s+/g, " ");
   if (!typed) return;
+  // "ingrida" counts as the existing "Ingrida": shown in the browser's own bubble, like an empty field.
+  const existing = S.state?.team.find((n) => n.toLowerCase() === typed.toLowerCase());
+  if (existing) {
+    input.setCustomValidity(t("nameTaken", existing));
+    input.reportValidity();
+    return;
+  }
   input.value = "";
-  // "ingrida" joins as the existing "Ingrida" instead of adding a second one.
-  const name = S.state?.team.find((n) => n.toLowerCase() === typed.toLowerCase()) ?? typed;
-  if (!S.state?.team.includes(name)) await addName(name);
+  await addName(typed);
+});
+
+// Typing again clears the "already on the board" message, so the form can be sent.
+document.addEventListener("input", (event) => {
+  if (event.target.form?.dataset.form === "add-name") event.target.setCustomValidity("");
 });
 
 // ── Boot ────────────────────────────────────────
 
 document.getElementById("app").innerHTML = `
   <div class="glow" aria-hidden="true"></div>
-  <header class="site-header">
-    <div class="container">
-      <a class="brand" href="./" data-action="home" title="Back to start">Team Check-in</a>
-      <div class="header-live" id="live"></div>
-      <div class="header-actions">
-        ${ROOM ? `<button class="btn btn-ghost" data-action="share" title="Copy the link to this check-in">Share</button>` : ""}
-        <button class="icon-btn" data-action="theme" title="Switch light / dark mode" aria-label="Switch light or dark mode">${ICONS.theme}</button>
-      </div>
-    </div>
-  </header>
+  <header class="site-header" id="header"></header>
   <main class="page">
     <div class="container" id="main"></div>
   </main>
@@ -731,4 +864,10 @@ document.getElementById("app").innerHTML = `
   <div class="fx" id="fx" aria-hidden="true"></div>`;
 
 render();
-if (ROOM) connect();
+if (ROOM) {
+  connect();
+  import("https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm")
+    .then(({ toString }) => toString(`${location.origin}${location.pathname}?room=${ROOM}`, { type: "svg", margin: 2 }))
+    .then((svg) => { qrSvg = svg; render(); })
+    .catch(console.error);
+}

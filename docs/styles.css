@@ -59,6 +59,8 @@
   --overlay: rgba(255, 255, 255, 0.06);
   --card-shadow: none;
   --dim: 0.5; /* away / already-shared tiles */
+  --danger: #ff5c5c;
+  --danger-soft: rgba(255, 92, 92, 0.14);
   color-scheme: dark;
 }
 
@@ -81,6 +83,8 @@
   --overlay: rgba(0, 0, 0, 0.05);
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.06);
   --dim: 0.7;
+  --danger: #c8102e;
+  --danger-soft: rgba(200, 16, 46, 0.08);
   color-scheme: light;
 }
 
@@ -219,6 +223,7 @@ button { font: inherit; color: inherit; }
 }
 .icon-btn:hover { background: var(--overlay); }
 .icon-btn svg { width: 24px; height: 24px; fill: currentColor; }
+.lang-btn { font: inherit; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; }
 
 @media (max-width: 560px) {
   .brand { display: none; }
@@ -285,6 +290,8 @@ button { font: inherit; color: inherit; }
 .btn-secondary:hover { border-color: var(--text); }
 .btn-ghost { background: none; color: var(--accent); padding: 0 var(--space-sm); }
 .btn-ghost:hover { text-decoration: underline; }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: var(--danger-soft); }
 .btn[disabled] { opacity: 0.4; cursor: not-allowed; transform: none; }
 .btn-row {
   display: flex;
@@ -302,6 +309,14 @@ button { font: inherit; color: inherit; }
 
 .hero { margin-bottom: var(--space-xl); }
 .hero-compact .headline { font-size: clamp(30px, 4.5vw, 48px); }
+.hero-compact { display: flex; align-items: center; gap: var(--space-xl); }
+.hero-text { flex: 1; min-width: 0; }
+/* Always black on white: some phone scanners can't read inverted codes. */
+.hero-qr { flex: none; width: 152px; margin: 0; padding: var(--space-sm); background: #fff; border-radius: var(--radius); text-align: center; }
+.hero-qr svg { display: block; width: 100%; height: auto; }
+.hero-qr figcaption { color: #111; font-size: 13px; }
+/* Phones are the scanners, not the screen being scanned. */
+@media (max-width: 759px) { .hero-qr { display: none; } }
 
 .layout {
   display: grid;
@@ -315,7 +330,7 @@ button { font: inherit; color: inherit; }
   .layout .board-col { grid-column: 1; grid-row: 1; }
 }
 .layout.is-choosing .board-col { order: -1; }
-/* Why-round: reactions are locked in, so the picker steps aside and the board takes the full width. */
+/* Lightning round: reactions are locked in, so the picker steps aside and the board takes the full width. */
 .layout.is-round { grid-template-columns: 1fr; }
 .layout.is-round .picker-col { display: none; }
 
@@ -568,7 +583,7 @@ button { font: inherit; color: inherit; }
   padding-top: var(--space-lg);
   border-top: 1px solid var(--border);
 }
-.controls .btn-ghost { margin-left: auto; }
+.controls .btn-danger { margin-left: auto; }
 .toggle {
   display: inline-flex;
   align-items: center;
@@ -579,7 +594,7 @@ button { font: inherit; color: inherit; }
 }
 .toggle input { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
 
-/* ── Why-round spotlight ────────────────────── */
+/* ── Lightning round spotlight ──────────────────── */
 .spotlight {
   text-align: center;
   padding: var(--space-xl) var(--space-lg);
@@ -703,7 +718,7 @@ button { font: inherit; color: inherit; }
 
 @media (max-width: 480px) {
   .controls .btn { flex: 1; }
-  .controls .btn-ghost { margin-left: 0; }
+  .controls .btn-danger { margin-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
